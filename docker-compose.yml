@@ -1,0 +1,49 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hydrogestion-app
+    ports:
+      - "8080:80"
+    environment:
+      APP_NAME: "HydroGestion"
+      APP_ENV: "production"
+      APP_DEBUG: "false"
+      APP_URL: "${APP_URL:-http://localhost:8080}"
+      APP_KEY: "${APP_KEY}"
+      APP_TIMEZONE: "Africa/Douala"
+      APP_LOCALE: "fr"
+      DB_CONNECTION: "pgsql"
+      DB_HOST: "db"
+      DB_PORT: "5432"
+      DB_DATABASE: "${DB_DATABASE:-water_platform}"
+      DB_USERNAME: "${DB_USERNAME:-water_platform}"
+      DB_PASSWORD: "${DB_PASSWORD:?Define DB_PASSWORD dans le fichier .env}"
+      SESSION_DRIVER: "database"
+      CACHE_STORE: "database"
+      QUEUE_CONNECTION: "database"
+      LOG_CHANNEL: "stderr"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: hydrogestion-db
+    environment:
+      POSTGRES_DB: "${DB_DATABASE:-water_platform}"
+      POSTGRES_USER: "${DB_USERNAME:-water_platform}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:?Define DB_PASSWORD dans le fichier .env}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-water_platform} -d ${DB_DATABASE:-water_platform}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
